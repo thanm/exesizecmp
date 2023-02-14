@@ -76,12 +76,23 @@ func secSizes(infile string) map[string]int64 {
 			}
 		}
 	}
+
+	// Add a pseudo-section "filesize:".
+	fi, err := os.Stat(infile)
+	if err != nil {
+		fatal("unable to stat %s: %v", infile, err)
+	}
+	sm[" file size:"] = fi.Size()
+
 	return sm
 }
 
 func diffTabs(m1 map[string]int64, m2 map[string]int64) {
 	ks1 := []string{}
 	for k := range m1 {
+		if k == ".go.buildinfo" {
+			continue
+		}
 		ks1 = append(ks1, k)
 	}
 	tabber := tabwriter.NewWriter(os.Stderr, 1, 8, 1, '\t', 0)
@@ -94,7 +105,7 @@ func diffTabs(m1 map[string]int64, m2 map[string]int64) {
 		if diff == 0 {
 			continue
 		}
-		perc := float64(diff) / float64(s1)
+		perc := (float64(diff) / float64(s1)) * 100.0
 		fmt.Fprintf(tabber, "%s\t%d\t%d\t%d\tp=%2.1f%%\n", k, s1, s2, diff, perc)
 	}
 }
